@@ -1,28 +1,47 @@
 function createMap(quakePlot) {
 
     // Create the tile layer that will be the background of our map
-    var lightmap = L.tileLayer("https://api.mapbox.com/styles/v1/mapbox/light-v9/tiles/256/{z}/{x}/{y}?access_token={accessToken}", {
+    const lightmap = L.tileLayer("https://api.mapbox.com/styles/v1/mapbox/light-v9/tiles/256/{z}/{x}/{y}?access_token={accessToken}", {
         attribution: "Map data &copy; <a href=\"http://openstreetmap.org\">OpenStreetMap</a> contributors, <a href=\"http://creativecommons.org/licenses/by-sa/2.0/\">CC-BY-SA</a>, Imagery © <a href=\"http://mapbox.com\">Mapbox</a>",
         maxZoom: 18,
         id: "mapbox.light",
         accessToken: API_KEY
     });
 
+    // Create Darkmap background
+    const darkmap = L.tileLayer("https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}", {
+        attribution: "Map data &copy; <a href=\"https://www.openstreetmap.org/\">OpenStreetMap</a> contributors, <a href=\"https://creativecommons.org/licenses/by-sa/2.0/\">CC-BY-SA</a>, Imagery © <a href=\"https://www.mapbox.com/\">Mapbox</a>",
+        maxZoom: 18,
+        id: "mapbox.dark",
+        accessToken: API_KEY
+    });
+
+    // Create satellite Background
+    const satellite = L.tileLayer("https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}", {
+        attribution: "Map data &copy; <a href=\"https://www.openstreetmap.org/\">OpenStreetMap</a> contributors, <a href=\"https://creativecommons.org/licenses/by-sa/2.0/\">CC-BY-SA</a>, Imagery © <a href=\"https://www.mapbox.com/\">Mapbox</a>",
+        maxZoom: 18,
+        id: "mapbox.satellite",
+        accessToken: API_KEY
+    })
+
+
     // Create a baseMaps object to hold the lightmap layer
-    var baseMaps = {
+    const baseMaps = {
         "Light Map": lightmap,
+        "Dark Map" : darkmap,
+        "Satellite Image" : satellite
     };
 
     // Create an overlayMaps object to hold the quakePlot layer
-    var overlayMaps = {
-        "Epicenters": quakePlot
+    let overlayMaps = {
+        "<b>Earthquake Epicenters</b><hr>Click a Cirlce for more info!<br><small>'M' = Magnitude or Power of the Seismic Event</small>": quakePlot
     };
 
     // Create the map object with options
-    var map = L.map("map-id", {
+    let map = L.map("map-id", {
         center: [35.73, -90],
         zoom: 4,
-        layers: [lightmap, quakePlot]
+        layers: [lightmap, darkmap, quakePlot]
     });
 
     // Create a layer control, pass in the baseMaps and overlayMaps. Add the layer control to the map
@@ -32,19 +51,22 @@ function createMap(quakePlot) {
 
 
 
-    // Create a legend to display information about our map
-    const info = L.control({
-        position: "bottomright"
-    });
+    // Create and add Legend
+    const legend = L.control({position: 'bottomright'});
 
-    // When the layer control is added, insert a div with the class of "legend"
-    info.onAdd = function() {
-        const div = L.DomUtil.create("div", "legend");
-    return div;
-    };
-    // Add the info legend to the map
-    info.addTo(map);
-}
+    legend.onAdd = function() {
+        const div = L.DomUtil.create('div', 'legend');
+        const labels = ['0-1', '1-3', '3-5', '5-7', '>7']
+        const colors = ['green', 'yellow', 'orange', 'red', 'grey']
+        div.innerHTML = '<b><font color="grey">Magnitude</font></b>';
+             for (let i = 0; i < colors.length; i++){
+                div.innerHTML +=
+                '<li style="background-color:' + colors[i] + '">' +'<b>' + labels[i] + '</b>'+ '</li>';        }
+        return div;
+    }    
+     // Add the info legend to the map
+    legend.addTo(map);
+};
 
 
 function createCircleMarkers(response) {
@@ -52,7 +74,7 @@ function createCircleMarkers(response) {
     
 
     // Pull the features from response
-    var quakes = response.features;
+    let quakes = response.features;
 
     // Loop through the quake array
     const quakeMarkers = quakes.map(quake => {
@@ -71,7 +93,7 @@ function createCircleMarkers(response) {
             opacity: 1,
             fillOpacity: 0.5
           }
-    
+        // new Date parses Epoch time from JSON into human readable date&time
         const popupMsg = "<h3>" + quake.properties.title + "<h3><h3>Date: " + new Date(quake.properties.time)+ "<h3>";
         const quakeMarkers = L.circle(coords, options).bindPopup(popupMsg);
 
@@ -87,14 +109,14 @@ function createCircleMarkers(response) {
 // Perform an API call to the USGS earthquake API to get quake info. Call createCircleMarkers when complete
 (async function(){
     const urlGeoJSON = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson"
-    const response = await d3.json(urlGeoJSON)
+    let response = await d3.json(urlGeoJSON)
     // console.log(response) For analysis in terminal
     createCircleMarkers(response)
 })()
 
 // this little function will return a color based on the earthquakes magnitude 
 function colorCircle(mag) {
-    var color = '';
+    let color = '';
     if (mag <= 1) {
         color = 'green';
     } else if (mag > 1 && mag <= 3) {
@@ -104,6 +126,6 @@ function colorCircle(mag) {
     } else if (mag > 5 && mag <=7) {
         color = 'red';
     } else if (mag > 7)
-        color = 'black';
+        color = 'grey';
     return color;
   }
