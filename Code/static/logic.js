@@ -10,7 +10,7 @@ function createMap(quakePlot) {
 
     // Create a baseMaps object to hold the lightmap layer
     var baseMaps = {
-        "Light Map": lightmap
+        "Light Map": lightmap,
     };
 
     // Create an overlayMaps object to hold the quakePlot layer
@@ -49,27 +49,32 @@ function createMap(quakePlot) {
 
 function createCircleMarkers(response) {
 
-    // Change the values of these options to change the symbol's appearance    
-    let options = {
-        radius: 8,
-        fillColor: "lightgreen",
-        color: "black",
-        weight: 1,
-        opacity: 1,
-        fillOpacity: 0.8
-      }
+    
+
     // Pull the features from response
     var quakes = response.features;
 
     // Loop through the quake array
     const quakeMarkers = quakes.map(quake => {
+
         // For each station, create a marker and bind a popup with the station's name
         // coords from response contain a depth field, slice removes this
         // Reverse swaps lat and lng to map locations correctly
         const coords = quake.geometry.coordinates.slice(0,2).reverse()
-        // const coords = coordsForslice.map(coord => {coord})
-        const popupMsg = "<h3>" + quake.properties.title + "<h3><h3>Date: " + quake.properties.time + "<h3>";
-        const quakeMarkers = L.marker(coords, options).bindPopup(popupMsg);
+
+        // Change the values of these options to change the symbol's appearance    
+        let options = {
+            radius: quake.properties.mag * 15000,
+            fillColor: colorCircle(quake.properties.mag),
+            color: colorCircle(quake.properties.mag),
+            weight: 1,
+            opacity: 1,
+            fillOpacity: 0.5
+          }
+    
+        const popupMsg = "<h3>" + quake.properties.title + "<h3><h3>Date: " + new Date(quake.properties.time)+ "<h3>";
+        const quakeMarkers = L.circle(coords, options).bindPopup(popupMsg);
+
         // Add the marker to the quakeMarkers array
         return quakeMarkers;
     })
@@ -83,6 +88,22 @@ function createCircleMarkers(response) {
 (async function(){
     const urlGeoJSON = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson"
     const response = await d3.json(urlGeoJSON)
-    console.log(response)
+    // console.log(response) For analysis in terminal
     createCircleMarkers(response)
 })()
+
+// this little function will return a color based on the earthquakes magnitude 
+function colorCircle(mag) {
+    var color = '';
+    if (mag <= 1) {
+        color = 'green';
+    } else if (mag > 1 && mag <= 3) {
+        color = 'yellow';
+    } else if (mag > 3 && mag <= 5) {
+        color = 'orange';
+    } else if (mag > 5 && mag <=7) {
+        color = 'red';
+    } else if (mag > 7)
+        color = 'black';
+    return color;
+  }
